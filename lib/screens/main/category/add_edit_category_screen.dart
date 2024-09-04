@@ -115,7 +115,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(categoryId == null ? 'Add Category' : 'Update Category'),
+        title: Text(categoryId == null ? 'Add Product' : 'Update Product'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -127,7 +127,11 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                   children: [
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Title'),
+                      decoration: const InputDecoration(
+                        labelText: 'Title',
+                        hintText: 'Product title',
+                        border: OutlineInputBorder(),
+                      ),
                       keyboardType: TextInputType.name,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -136,9 +140,14 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                         return null;
                       },
                     ),
+                    const SizedBox(height: 10),
                     TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(labelText: 'Price'),
+                      decoration: const InputDecoration(
+                        labelText: 'Price',
+                        hintText: 'Product price',
+                        border: OutlineInputBorder(),
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -158,7 +167,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                         ElevatedButton(
                           onPressed: _saveCategory,
                           child: Text(categoryId == null
-                              ? 'Add Category'
+                              ? 'Add Product'
                               : 'Save Changes'),
                         ),
                         TextButton(

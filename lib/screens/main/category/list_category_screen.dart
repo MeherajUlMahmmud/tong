@@ -32,19 +32,40 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       QuerySnapshot querySnapshot = await _firestore
           .collection('categories')
           .where('userId', isEqualTo: user.uid)
+          .orderBy('title')
           .get();
 
-      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-        _categories[doc.id] = doc.data();
-      }
+      setState(() {
+        _categories.clear();
+        for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+          _categories[doc.id] = doc.data();
+        }
+      });
 
-      print("Categories fetched: ${_categories.length}");
+      print("Products fetched: ${_categories.length}");
+    } catch (e) {
+      print('Error fetching Product: $e');
+    }
+  }
+
+  Future<void> _deleteCategory(String categoryId) async {
+    try {
+      await _firestore.collection('categories').doc(categoryId).delete();
 
       setState(() {
-        _categories;
+        _categories.remove(categoryId);
       });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product deleted successfully')),
+      );
     } catch (e) {
-      print('Error fetching categories: $e');
+      print('Error deleting category: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete Product')),
+      );
     }
   }
 
@@ -52,7 +73,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Categories'),
+        title: const Text('Products'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -68,26 +89,56 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final categoryId = _categories.keys.elementAt(index);
-
                   final categoryData = _categories[categoryId];
-
                   final categoryTitle = categoryData['title'];
                   final categoryPrice = categoryData['price'];
 
                   return ListTile(
                     title: Text(categoryTitle),
                     subtitle: Text('Price: \$$categoryPrice'),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () {
+                            Navigator.of(context).pushNamed(
+                              AddEditCategoryScreen.routeName,
+                              arguments: categoryId,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            final confirmDelete = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Product'),
+                                content: const Text(
+                                    'Are you sure you want to delete this Product?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmDelete == true) {
+                              _deleteCategory(categoryId);
+                            }
+                          },
+                        ),
+                      ],
                     ),
-                    onTap: () {
-                      // Handle tap on category item
-                      Navigator.of(context).pushNamed(
-                        AddEditCategoryScreen.routeName,
-                        arguments: categoryId,
-                      );
-                    },
                   );
                 },
               ),

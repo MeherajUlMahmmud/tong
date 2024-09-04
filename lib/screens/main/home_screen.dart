@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Icon(Icons.list_alt_outlined, size: 20),
                     SizedBox(width: 5),
-                    Text('Category'),
+                    Text('Product'),
                   ],
                 ),
               ),
