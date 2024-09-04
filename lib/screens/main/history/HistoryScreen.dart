@@ -121,7 +121,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _showItemsBottomSheet(String date) async {
     showModalBottomSheet(
       context: context,
-      // isScrollControlled: true,
+      isScrollControlled: true,
       builder: (ctx) {
         return FutureBuilder<DocumentSnapshot>(
           future: _firestore
