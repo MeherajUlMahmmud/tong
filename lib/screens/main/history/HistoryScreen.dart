@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tong/utils/utils.dart';
@@ -50,7 +51,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error initializing data: $e');
+      developer.log('Error initializing data: $e');
       setState(() {
         _isLoading = false;
         _error = 'Error initializing data: $e';
@@ -61,7 +62,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   /// Fetch categories for the current user from Firestore
   Future<void> _fetchCategories() async {
     try {
-      print("Fetching categories...");
+      developer.log("Fetching categories...");
       QuerySnapshot querySnapshot = await _firestore
           .collection('categories')
           .where('userId', isEqualTo: _user!.uid)
@@ -78,9 +79,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _categories = fetchedCategories;
       });
 
-      print("Categories fetched: ${_categories.length}");
+      developer.log("Categories fetched: ${_categories.length}");
     } catch (e) {
-      print('Error fetching categories: $e');
+      developer.log('Error fetching categories: $e');
       setState(() {
         _error = 'Error fetching categories: $e';
       });
@@ -90,12 +91,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   /// Fetch all available dates for the current user from Firestore
   Future<void> _fetchDates() async {
     try {
-      print("Fetching dates...");
+      developer.log("Fetching dates...");
       QuerySnapshot querySnapshot = await _firestore
           .collection('daily_data')
           .doc(_user!.uid)
           .collection('dates')
-          // .orderBy(FieldPath.documentId, descending: true) // Latest dates first
+          .orderBy(FieldPath.documentId, descending: true) // Latest dates first
           .get();
 
       List<String> fetchedDates = [];
@@ -108,9 +109,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _dates = fetchedDates;
       });
 
-      print("Dates fetched: ${_dates.length}");
+      developer.log("Dates fetched: ${_dates.length}");
     } catch (e) {
-      print('Error fetching dates: $e');
+      developer.log('Error fetching dates: $e');
       setState(() {
         _error = 'Error fetching dates: $e';
       });
@@ -160,7 +161,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             // Convert to a list of items with category titles and counts
             List<Map<String, dynamic>> itemsList = [];
 
-            itemsData.forEach((categoryId, count) {
+            itemsData.forEach((categoryId, itemCount) {
               if (_categories.containsKey(categoryId)) {
                 String title = _categories[categoryId]['title'] ?? 'No Title';
                 dynamic priceDynamic = _categories[categoryId]['price'];
@@ -173,10 +174,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   price = 0.0;
                 }
                 int countInt = 0;
-                if (count is int) {
-                  countInt = count;
-                } else if (count is double) {
-                  countInt = count.toInt();
+                if (itemCount is int) {
+                  countInt = itemCount;
+                } else if (itemCount is double) {
+                  countInt = itemCount.toInt();
                 } else {
                   // Handle other possible types or set to 0
                   countInt = 0;
@@ -211,7 +212,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Text(
                     'Items for ${_formatDateString(date)}',
-                    style: Theme.of(context).textTheme.headline6,
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 10),
                   ListView.builder(
@@ -224,7 +225,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       return ListTile(
                         title: Text(item['title']),
                         subtitle: Text(
-                            'Price: \$${item['price'].toStringAsFixed(2)}, Count: ${item['count']}'),
+                          '৳${item['price'].toStringAsFixed(2)}, Count: ${item['count']}',
+                        ),
                         trailing: Text('\$${item['total'].toStringAsFixed(2)}'),
                       );
                     },
@@ -238,9 +240,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// Format date string from 'yyyy-MM-dd' to 'Month dd, yyyy'
   String _formatDateString(String dateString) {
-    // Assuming dateString is in 'yyyy-MM-dd' format
     try {
       DateTime date = DateTime.parse(dateString);
       return "${Helper().getMonthName(date.month)} ${date.day}, ${date.year}";

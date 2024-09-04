@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logging/logging.dart';
+import 'package:tong/repository/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
@@ -11,20 +13,47 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Logger _logger = Logger('ProfileScreen');
+  final AuthService _authService = AuthService();
+
   User? _user;
 
   @override
   void initState() {
     super.initState();
-    _user = _auth.currentUser;
+    _user = _authService.currentUser;
   }
 
   void _logout() async {
-    await _auth.signOut();
+    final bool? confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).popUntil((route) => route.isFirst),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
 
-    if (!context.mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    if (confirmLogout == true) {
+      _logger.info('Logging out...');
+      await _authService.signOut();
+      _logger.info('Logged out');
+
+      if (!context.mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   @override
@@ -53,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 10),
                     Text(
                       _user!.displayName ?? 'No Name',
-                      style: const TextStyle(fontSize: 20),
+                      style: const TextStyle(fontSize: 30),
                     ),
                     const SizedBox(height: 10),
                     Text(

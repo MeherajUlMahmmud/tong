@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logging/logging.dart';
+import 'package:tong/repository/firestore_service.dart';
 import 'package:tong/screens/main/category/add_edit_category_screen.dart';
 
 class CategoryListScreen extends StatefulWidget {
@@ -13,58 +13,42 @@ class CategoryListScreen extends StatefulWidget {
 }
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Logger _logger = Logger('CategoryListScreen');
 
-  final Map<String, dynamic> _categories = {};
+  final FirestoreService _firestoreService = FirestoreService();
+
+  Map<String, dynamic> _categories = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
+    _loadCategories();
   }
 
-  Future<void> _fetchCategories() async {
-    User? user = _auth.currentUser;
-    if (user == null) return;
-
+  Future<void> _loadCategories() async {
     try {
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('categories')
-          .where('userId', isEqualTo: user.uid)
-          .orderBy('title')
-          .get();
+      _logger.info('Fetching categories...');
 
-      setState(() {
-        _categories.clear();
-        for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-          _categories[doc.id] = doc.data();
-        }
-      });
+      _categories = await _firestoreService.fetchCategories();
+      setState(() {});
 
-      print("Products fetched: ${_categories.length}");
+      _logger.info('Categories fetched: ${_categories.length}');
     } catch (e) {
-      print('Error fetching Product: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
   Future<void> _deleteCategory(String categoryId) async {
     try {
-      await _firestore.collection('categories').doc(categoryId).delete();
-
-      setState(() {
-        _categories.remove(categoryId);
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product deleted successfully')),
-      );
+      await _firestoreService.deleteCategory(categoryId);
+      _loadCategories(); // Refresh categories after deletion
     } catch (e) {
-      print('Error deleting category: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete Product')),
+        SnackBar(content: Text(e.toString())),
       );
     }
   }
@@ -73,7 +57,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Products'),
+        title: const Text('Categories'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -84,7 +68,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       body: _categories.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _fetchCategories,
+              onRefresh: _loadCategories,
               child: ListView.builder(
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
@@ -95,7 +79,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
                   return ListTile(
                     title: Text(categoryTitle),
-                    subtitle: Text('Price: \$$categoryPrice'),
+                    subtitle: Text('৳ $categoryPrice'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -114,9 +98,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                             final confirmDelete = await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Delete Product'),
+                                title: const Text('Delete Category'),
                                 content: const Text(
-                                    'Are you sure you want to delete this Product?'),
+                                    'Are you sure you want to delete this Category?'),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>

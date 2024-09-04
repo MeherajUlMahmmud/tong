@@ -1,6 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logging/logging.dart';
+import 'package:tong/repository/firestore_service.dart';
 
 class AddEditCategoryScreen extends StatefulWidget {
   static const routeName = '/add-edit-category';
@@ -12,10 +13,12 @@ class AddEditCategoryScreen extends StatefulWidget {
 }
 
 class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  User? _user;
+  final Logger _logger = Logger('AddEditCategoryScreen');
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  User? _user;
   String? categoryId;
 
   final _formKey = GlobalKey<FormState>();
@@ -39,29 +42,26 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   @override
   void initState() {
     super.initState();
-
-    setState(() {
-      _user = _auth.currentUser;
-    });
+    _user = _auth.currentUser;
   }
 
-  Future<void> _loadCategoryData(categoryId) async {
+  Future<void> _loadCategoryData(String categoryId) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final categorySnapshot =
-          await _firestore.collection('categories').doc(categoryId).get();
-
-      if (categorySnapshot.exists) {
-        final data = categorySnapshot.data()!;
+      final data = await _firestoreService.getCategoryById(categoryId);
+      if (data != null) {
         _titleController.text = data['title'];
         _priceController.text = data['price'].toString();
       }
-    } catch (e) {
-      // Handle error (e.g., show a snackbar or dialog)
-      print('Error loading category data: $e');
+    } catch (e, stackTrace) {
+      _logger.severe('Error loading category data', e, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading category data: $e')),
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -84,26 +84,19 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
 
       if (categoryId != null) {
         // Edit existing category
-        await FirebaseFirestore.instance
-            .collection('categories')
-            .doc(categoryId)
-            .update({
-          'title': title,
-          'price': price,
-        });
+        await _firestoreService.updateCategory(categoryId!, title, price);
       } else {
         // Add new category
-        await FirebaseFirestore.instance.collection('categories').add({
-          'title': title,
-          'price': price,
-          'userId': _user!.uid,
-        });
+        await _firestoreService.addCategory(title, price, _user!.uid);
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop();
-    } catch (e) {
-      // Handle error (e.g., show a snackbar or dialog)
-      print('Error saving category: $e');
+    } catch (e, stackTrace) {
+      _logger.severe('Error saving category', e, stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving category: $e')),
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -112,10 +105,17 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   }
 
   @override
+  void dispose() {
+    _titleController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(categoryId == null ? 'Add Product' : 'Update Product'),
+        title: Text(categoryId == null ? 'Add Category' : 'Update Category'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -129,7 +129,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                       controller: _titleController,
                       decoration: const InputDecoration(
                         labelText: 'Title',
-                        hintText: 'Product title',
+                        hintText: 'Category title',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.name,
@@ -145,7 +145,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                       controller: _priceController,
                       decoration: const InputDecoration(
                         labelText: 'Price',
-                        hintText: 'Product price',
+                        hintText: 'Category price',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
@@ -167,7 +167,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                         ElevatedButton(
                           onPressed: _saveCategory,
                           child: Text(categoryId == null
-                              ? 'Add Product'
+                              ? 'Add Category'
                               : 'Save Changes'),
                         ),
                         TextButton(

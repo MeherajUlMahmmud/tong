@@ -1,6 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logging/logging.dart';
+import 'package:tong/repository/auth_service.dart';
 import 'package:tong/screens/main/home_screen.dart';
 import 'package:tong/utils/constants.dart';
 
@@ -8,51 +9,36 @@ class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
 
   const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Logger _logger = Logger('LoginScreen');
+
+  final AuthService _authService = AuthService();
 
   bool isLoading = false;
   String error = '';
 
   Future<void> _googleSignIn() async {
-    try {
-      setState(() {
-        isLoading = true;
-        error = '';
-      });
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    setState(() {
+      isLoading = true;
+      error = '';
+    });
 
-      if (googleUser != null) {
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+    UserCredential? userCredential = await _authService.signInWithGoogle();
 
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        UserCredential userCredential =
-            await _auth.signInWithCredential(credential);
-        print("User signed in: ${userCredential.user}");
-
-        if (!context.mounted) return;
-        Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
-      } else {
-        setState(() {
-          isLoading = false;
-          error = "Failed to sign in";
-        });
-      }
-    } catch (e) {
-      print("Error: $e");
+    if (userCredential != null) {
+      _logger.info("User signed in: ${userCredential.user}");
+      if (!context.mounted) return;
+      Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+    } else {
+      _logger.severe("Failed to sign in");
       setState(() {
         isLoading = false;
-        error = "Wrong credentials";
+        error = "Failed to sign in";
       });
     }
   }
@@ -66,6 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Image.asset(Constants.tongDokanImage, width: 200),
+              const SizedBox(height: 20),
               const Text(
                 Constants.appName,
                 style: TextStyle(

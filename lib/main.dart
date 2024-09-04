@@ -8,9 +8,12 @@ import 'package:tong/screens/main/home_screen.dart';
 import 'package:tong/screens/main/user/profile_screen.dart';
 import 'package:tong/screens/utility/splash_screen.dart';
 import 'package:tong/utils/constants.dart';
+import 'package:tong/utils/logger.dart';
 import 'firebase_options.dart';
 
 void main() async {
+  setupLogger();
+
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -26,6 +29,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: Constants.appName,
+      theme: ThemeData(
+        fontFamily: 'Alkatra',
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       home: const SplashScreen(),
       routes: {
         LoginScreen.routeName: (ctx) => const LoginScreen(),
