@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tong/screens/auth/login_screen.dart';
-import 'package:tong/screens/main/home_screen.dart';
+import 'package:tong/screens/main/main_screen.dart';
 import 'package:tong/utils/constants.dart';
 
 class SplashScreen extends StatefulWidget {
+  static const String routeName = '/';
+
   const SplashScreen({super.key});
 
   @override
@@ -26,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     } else {
       developer.log("User logged in");
       Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+        Navigator.pushReplacementNamed(context, MainScreen.routeName);
       });
     }
   }

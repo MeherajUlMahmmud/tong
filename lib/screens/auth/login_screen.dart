@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:tong/repository/auth_service.dart';
-import 'package:tong/screens/main/home_screen.dart';
+import 'package:tong/screens/main/main_screen.dart';
 import 'package:tong/utils/constants.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (userCredential != null) {
       _logger.info("User signed in: ${userCredential.user}");
       if (!context.mounted) return;
-      Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      Navigator.of(context).pushReplacementNamed(MainScreen.routeName);
     } else {
       _logger.severe("Failed to sign in");
       setState(() {

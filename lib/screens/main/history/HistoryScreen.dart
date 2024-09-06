@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logging/logging.dart';
+import 'package:tong/repository/firestore_service.dart';
+import 'package:tong/utils/constants.dart';
 import 'package:tong/utils/utils.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -14,11 +15,16 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Logger _logger = Logger('HistoryScreen');
 
-  User? _user;
+  final FirestoreService _firestoreService = FirestoreService();
+
   List<String> _dates = [];
+  String? _selectedYearMonth; // Selected year and month for filtering
+  // Default to current year
+  String _selectedYear = DateTime.now().year.toString();
+  // Default to current month
+  String _selectedMonth = Helper.formatMonth(DateTime.now().month);
   Map<String, dynamic> _categories = {};
   bool _isLoading = true;
   String _error = '';
@@ -26,24 +32,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+
+    _selectedYearMonth = Helper.formatYearMonth(DateTime.now());
     _initializeData();
   }
 
   /// Initialize data by fetching the current user, categories, and dates
   Future<void> _initializeData() async {
     try {
-      _user = _auth.currentUser;
-
-      if (_user == null) {
-        setState(() {
-          _isLoading = false;
-          _error = 'User not logged in';
-        });
-
-        // Clear the stack and navigate to the login screen
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
-
       await _fetchCategories();
       await _fetchDates();
 
@@ -51,7 +47,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      developer.log('Error initializing data: $e');
+      _logger.info('Error initializing data: $e');
       setState(() {
         _isLoading = false;
         _error = 'Error initializing data: $e';
@@ -59,29 +55,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Filter dates based on the selected year and month
+  void _filterByMonth(String year, String month) async {
+    _selectedYearMonth = '$year-$month'; // Format year and month
+    setState(() {}); // Trigger UI update
+
+    await _fetchDates();
+  }
+
   /// Fetch categories for the current user from Firestore
   Future<void> _fetchCategories() async {
     try {
-      developer.log("Fetching categories...");
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('categories')
-          .where('userId', isEqualTo: _user!.uid)
-          .orderBy('title')
-          .get();
+      _logger.info("Fetching categories...");
 
-      Map<String, dynamic> fetchedCategories = {};
+      _categories = await _firestoreService.fetchCategories();
+      setState(() {});
 
-      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-        fetchedCategories[doc.id] = doc.data();
-      }
-
-      setState(() {
-        _categories = fetchedCategories;
-      });
-
-      developer.log("Categories fetched: ${_categories.length}");
+      _logger.info("Categories fetched: ${_categories.length}");
     } catch (e) {
-      developer.log('Error fetching categories: $e');
+      _logger.severe('Error fetching categories: $e');
       setState(() {
         _error = 'Error fetching categories: $e';
       });
@@ -91,27 +83,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   /// Fetch all available dates for the current user from Firestore
   Future<void> _fetchDates() async {
     try {
-      developer.log("Fetching dates...");
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('daily_data')
-          .doc(_user!.uid)
-          .collection('dates')
-          .orderBy(FieldPath.documentId, descending: true) // Latest dates first
-          .get();
+      _logger.info("Fetching dates...");
 
-      List<String> fetchedDates = [];
+      _dates = await _firestoreService.fetchDates(_selectedYearMonth!);
+      setState(() {});
 
-      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-        fetchedDates.add(doc.id); // Assuming doc.id is the date string
-      }
-
-      setState(() {
-        _dates = fetchedDates;
-      });
-
-      developer.log("Dates fetched: ${_dates.length}");
+      _logger.info("Dates fetched: ${_dates.length}");
     } catch (e) {
-      developer.log('Error fetching dates: $e');
+      _logger.severe('Error fetching dates: $e');
       setState(() {
         _error = 'Error fetching dates: $e';
       });
@@ -120,34 +99,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   /// Show a bottom sheet with item details for a selected date
   Future<void> _showItemsBottomSheet(String date) async {
+    double totalSpent = 0.0;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
         return FutureBuilder<DocumentSnapshot>(
-          future: _firestore
-              .collection('daily_data')
-              .doc(_user!.uid)
-              .collection('dates')
-              .doc(date)
-              .get(),
+          future: _firestoreService.fetchDailyDataDocument(date),
           builder: (context, snapshot) {
-            // if (snapshot.connectionState == ConnectionState.waiting) {
-            //   return const Padding(
-            //     padding: EdgeInsets.all(16.0),
-            //     child: Center(child: CircularProgressIndicator()),
-            //   );
-            // }
             if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Center(child: Text('Error: ${snapshot.error}')),
+              return SizedBox(
+                height: 200,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(child: Text('Error: ${snapshot.error}')),
+                ),
               );
             }
             if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: Text('No data for this date.')),
+              return const SizedBox(
+                height: 200,
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: Text('No data for this date.')),
+                ),
               );
             }
 
@@ -183,19 +159,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   countInt = 0;
                 }
 
+                double total = price * countInt;
+                totalSpent += total;
+
                 itemsList.add({
                   'title': title,
                   'price': price,
                   'count': countInt,
-                  'total': price * countInt,
+                  'total': total,
                 });
               }
             });
 
             if (itemsList.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: Text('No items for this date.')),
+              return const SizedBox(
+                height: 200,
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: Text('No items for this date.')),
+                ),
               );
             }
 
@@ -211,7 +193,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Items for ${_formatDateString(date)}',
+                    '${Helper.formatDateString(date)}  -  ৳${totalSpent.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 10),
@@ -240,40 +222,119 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  String _formatDateString(String dateString) {
-    try {
-      DateTime date = DateTime.parse(dateString);
-      return "${Helper().getMonthName(date.month)} ${date.day}, ${date.year}";
-    } catch (e) {
-      return dateString;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('History'),
+        title: const Text(ScreenTitles.history),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error.isNotEmpty
               ? Center(child: Text(_error))
-              : _dates.isEmpty
-                  ? const Center(child: Text('No history available.'))
-                  : ListView.builder(
-                      itemCount: _dates.length,
-                      itemBuilder: (context, index) {
-                        final date = _dates[index];
-                        return ListTile(
-                          title: Text(_formatDateString(date)),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            _showItemsBottomSheet(date);
-                          },
-                        );
-                      },
-                    ),
+              : Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      // Year Dropdown
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Year',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                ),
+                              ),
+                              DropdownButton<String>(
+                                value: _selectedYear,
+                                hint: const Text("Select Year"),
+                                onChanged: (String? newYear) {
+                                  if (newYear != null) {
+                                    _selectedYear = newYear;
+                                    _filterByMonth(
+                                        _selectedYear, _selectedMonth);
+                                  }
+                                },
+                                items: List.generate(5, (index) {
+                                  final year =
+                                      (DateTime.now().year - index).toString();
+                                  return DropdownMenuItem<String>(
+                                    value: year,
+                                    child: Text(year),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ),
+
+                          // Month Dropdown
+                          Column(
+                            children: [
+                              const Text(
+                                'Month',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                ),
+                              ),
+                              DropdownButton<String>(
+                                value: _selectedMonth,
+                                hint: const Text("Select Month"),
+                                onChanged: (String? newMonth) {
+                                  if (newMonth != null) {
+                                    _selectedMonth = newMonth;
+                                    _filterByMonth(
+                                        _selectedYear, _selectedMonth);
+                                  }
+                                },
+                                // items: List.generate(12, (index) {
+                                //   final month =
+                                //       (index + 1).toString().padLeft(2, '0');
+                                //   return DropdownMenuItem<String>(
+                                //     value: month,
+                                //     child: Text(Helper.formatMonth(index + 1)),
+                                //   );
+                                // }),
+                                items: Constants.monthToNumber.keys.map((key) {
+                                  return DropdownMenuItem<String>(
+                                    value: Constants.monthToNumber[key]!,
+                                    child: Text(key),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // List of dates
+                      Expanded(
+                        child: _dates.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No history available for selected month.',
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: _dates.length,
+                                itemBuilder: (context, index) {
+                                  final date = _dates[index];
+                                  return ListTile(
+                                    title: Text(Helper.formatDateString(date)),
+                                    trailing: const Icon(Icons.chevron_right),
+                                    onTap: () {
+                                      _showItemsBottomSheet(date);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 }

@@ -47,6 +47,19 @@ class FirestoreService {
     }
   }
 
+  double getCategoryPrice(Map<String, dynamic> categories, String categoryId) {
+    dynamic priceData = categories[categoryId]['price'];
+    if (priceData is double) {
+      return priceData;
+    } else if (priceData is int) {
+      return priceData.toDouble();
+    } else if (priceData is String) {
+      return double.tryParse(priceData) ?? 0.0;
+    } else {
+      throw Exception('Invalid price type for category $categoryId');
+    }
+  }
+
   Future<void> updateCategory(
       String categoryId, String title, double price) async {
     try {
@@ -71,24 +84,39 @@ class FirestoreService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchTodaysData() async {
+  Future<Map<String, dynamic>?> fetchDailyData(String date) async {
     User? user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
-
-    final String today =
-        '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
 
     final DocumentReference userDoc = _firestore
         .collection('daily_data')
         .doc(user.uid)
         .collection('dates')
-        .doc(today);
+        .doc(date);
 
     try {
       DocumentSnapshot docSnapshot = await userDoc.get();
       return docSnapshot.exists
           ? docSnapshot.data() as Map<String, dynamic>?
           : null;
+    } catch (e) {
+      throw Exception('Error fetching today\'s data: $e');
+    }
+  }
+
+  Future<DocumentSnapshot> fetchDailyDataDocument(String date) async {
+    User? user = _auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final DocumentReference userDoc = _firestore
+        .collection('daily_data')
+        .doc(user.uid)
+        .collection('dates')
+        .doc(date);
+
+    try {
+      DocumentSnapshot docSnapshot = await userDoc.get();
+      return docSnapshot;
     } catch (e) {
       throw Exception('Error fetching today\'s data: $e');
     }
@@ -134,16 +162,31 @@ class FirestoreService {
     }
   }
 
-  double getCategoryPrice(Map<String, dynamic> categories, String categoryId) {
-    dynamic priceData = categories[categoryId]['price'];
-    if (priceData is double) {
-      return priceData;
-    } else if (priceData is int) {
-      return priceData.toDouble();
-    } else if (priceData is String) {
-      return double.tryParse(priceData) ?? 0.0;
-    } else {
-      throw Exception('Invalid price type for category $categoryId');
+  Future<List<String>> fetchDates(String yearMonth) async {
+    User? user = _auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    try {
+      final QuerySnapshot querySnapshot = await _firestore
+          .collection('daily_data')
+          .doc(user.uid)
+          .collection('dates')
+          // Match month
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: yearMonth)
+          // To ensure it stays within the selected month
+          .where(FieldPath.documentId, isLessThan: '${yearMonth}z')
+          // Latest dates first
+          .orderBy(FieldPath.documentId, descending: true)
+          .get();
+
+      List<String> fetchedDates = [];
+
+      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+        fetchedDates.add(doc.id); // Assuming doc.id is the date string
+      }
+      return fetchedDates;
+    } catch (e) {
+      throw Exception('Error fetching dates from Firestore: $e');
     }
   }
 }

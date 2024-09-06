@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logging/logging.dart';
 import 'package:tong/repository/auth_service.dart';
+import 'package:tong/screens/auth/login_screen.dart';
+import 'package:tong/utils/constants.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
@@ -14,6 +17,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final Logger _logger = Logger('ProfileScreen');
+
   final AuthService _authService = AuthService();
 
   User? _user;
@@ -37,8 +41,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).popUntil((route) => route.isFirst),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Confirm the logout
+              },
               child: const Text('Logout'),
             ),
           ],
@@ -49,10 +54,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmLogout == true) {
       _logger.info('Logging out...');
       await _authService.signOut();
+
+      // Sign out from Google account (clears account session)
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+
       _logger.info('Logged out');
 
       if (!context.mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
+
+      // Clear the stack and navigate to the login screen
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        LoginScreen.routeName, // Assuming LoginScreen is the route for login
+        (route) => false, // This clears all previous routes
+      );
     }
   }
 
@@ -60,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text(ScreenTitles.profile),
       ),
       body: _user == null
           ? const Center(child: CircularProgressIndicator())

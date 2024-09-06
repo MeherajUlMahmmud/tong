@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:tong/repository/firestore_service.dart';
+import 'package:tong/utils/constants.dart';
 
 class AddEditCategoryScreen extends StatefulWidget {
   static const routeName = '/add-edit-category';
@@ -115,7 +116,11 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(categoryId == null ? 'Add Category' : 'Update Category'),
+        title: Text(
+          categoryId == null
+              ? ScreenTitles.addCategory
+              : ScreenTitles.updateCategory,
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

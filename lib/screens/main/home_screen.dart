@@ -4,8 +4,6 @@ import 'package:logging/logging.dart';
 import 'package:tong/repository/auth_service.dart';
 import 'package:tong/repository/firestore_service.dart';
 import 'package:tong/screens/main/category/list_category_screen.dart';
-import 'package:tong/screens/main/history/HistoryScreen.dart';
-import 'package:tong/screens/main/user/profile_screen.dart';
 import 'package:tong/utils/constants.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -50,6 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
     11: 'November',
     12: 'December',
   };
+
+  final String today =
+      '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
 
   @override
   void dispose() {
@@ -104,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchTodaysData() async {
     try {
       _logger.info('Fetching today\'s data...');
-      final data = await _firestoreService.fetchTodaysData();
+      final data = await _firestoreService.fetchDailyData(today);
       if (data != null) {
         _todaysData = data;
         _updateTotalAmount();
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       } else {
         await _firestoreService.initializeTodaysData();
-        final newData = await _firestoreService.fetchTodaysData();
+        final newData = await _firestoreService.fetchDailyData(today);
         setState(() {
           _todaysData = newData ?? {};
           isLoading = false;
@@ -167,20 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _firestoreService.updateItemCount(categoryId, _todaysData[categoryId] ?? 0);
   }
 
-  void _onMenuSelected(int item) {
-    switch (item) {
-      case 0:
-        Navigator.of(context).pushNamed(CategoryListScreen.routeName);
-        break;
-      case 1:
-        Navigator.of(context).pushNamed(ProfileScreen.routeName);
-        break;
-      case 2:
-        Navigator.of(context).pushNamed(HistoryScreen.routeName);
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -193,41 +180,11 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             icon: const Icon(Icons.refresh),
           ),
-          PopupMenuButton<int>(
-            onSelected: (item) => _onMenuSelected(item),
-            itemBuilder: (context) => [
-              const PopupMenuItem<int>(
-                value: 0,
-                child: Row(
-                  children: [
-                    Icon(Icons.list_alt_outlined, size: 20),
-                    SizedBox(width: 5),
-                    Text('Category'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<int>(
-                value: 1,
-                child: Row(
-                  children: [
-                    Icon(Icons.person_outline, size: 20),
-                    SizedBox(width: 5),
-                    Text('Profile'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<int>(
-                value: 2,
-                child: Row(
-                  children: [
-                    Icon(Icons.history, size: 20),
-                    SizedBox(width: 5),
-                    Text('History'),
-                  ],
-                ),
-              ),
-            ],
-            icon: const Icon(Icons.more_vert),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).pushNamed(CategoryListScreen.routeName);
+            },
+            icon: const Icon(Icons.list_alt_outlined),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:tong/repository/firestore_service.dart';
 import 'package:tong/screens/main/category/add_edit_category_screen.dart';
+import 'package:tong/utils/constants.dart';
 
 class CategoryListScreen extends StatefulWidget {
   static const routeName = '/category';
@@ -18,6 +19,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
   Map<String, dynamic> _categories = {};
+  final Map<String, bool> _expandedCategories = {}; // Track expanded state
 
   @override
   void initState() {
@@ -57,7 +59,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Categories'),
+        title: const Text(ScreenTitles.categoryList),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -77,52 +79,95 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   final categoryTitle = categoryData['title'];
                   final categoryPrice = categoryData['price'];
 
-                  return ListTile(
-                    title: Text(categoryTitle),
-                    subtitle: Text('৳ $categoryPrice'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(
-                              AddEditCategoryScreen.routeName,
-                              arguments: categoryId,
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            final confirmDelete = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Category'),
-                                content: const Text(
-                                    'Are you sure you want to delete this Category?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(true),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
-                            );
+                  // Check if this category is expanded
+                  bool isExpanded = _expandedCategories[categoryId] ?? false;
 
-                            if (confirmDelete == true) {
-                              _deleteCategory(categoryId);
-                            }
-                          },
+                  return Column(
+                    children: [
+                      ListTile(
+                        title: Text(categoryTitle),
+                        subtitle: Text('৳ $categoryPrice'),
+                        trailing: Icon(
+                          isExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
                         ),
-                      ],
-                    ),
+                        onTap: () {
+                          setState(() {
+                            _expandedCategories[categoryId] = !isExpanded;
+                          });
+                        },
+                      ),
+                      if (isExpanded) // Show buttons if expanded
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pushNamed(
+                                    AddEditCategoryScreen.routeName,
+                                    arguments: categoryId,
+                                  );
+                                },
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.edit, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Update'),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: () async {
+                                  final confirmDelete = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Category'),
+                                      content: const Text(
+                                          'Are you sure you want to delete this Category?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmDelete == true) {
+                                    _deleteCategory(categoryId);
+                                  }
+                                },
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      size: 20,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),
