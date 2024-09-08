@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Text('Hi ${_user!.displayName ?? 'User'}'),
+          Text('Hi ${_user!.displayName ?? 'User'}'),
           const SizedBox(height: 5),
           Text(
             'Today is $formattedDate',
