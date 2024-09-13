@@ -97,10 +97,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  /// Show a bottom sheet with item details for a selected date
   Future<void> _showItemsBottomSheet(String date) async {
-    double totalSpent = 0.0;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -136,6 +133,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             // Convert to a list of items with category titles and counts
             List<Map<String, dynamic>> itemsList = [];
+            double totalSpent = 0.0; // Move this inside the builder
 
             itemsData.forEach((categoryId, itemCount) {
               if (_categories.containsKey(categoryId)) {
@@ -160,8 +158,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 }
 
                 double total = price * countInt;
-                totalSpent += total;
-
                 itemsList.add({
                   'title': title,
                   'price': price,
@@ -170,6 +166,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 });
               }
             });
+
+            // Calculate total spent after processing all items
+            totalSpent =
+                itemsList.fold(0.0, (sum, item) => sum + item['total']);
 
             if (itemsList.isEmpty) {
               return const SizedBox(
@@ -259,14 +259,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         _selectedYear, _selectedMonth);
                                   }
                                 },
-                                items: List.generate(5, (index) {
-                                  final year =
-                                      (DateTime.now().year - index).toString();
-                                  return DropdownMenuItem<String>(
-                                    value: year,
-                                    child: Text(year),
-                                  );
-                                }),
+                                items: List.generate(
+                                  5,
+                                  (index) {
+                                    final year = (DateTime.now().year - index)
+                                        .toString();
+                                    return DropdownMenuItem<String>(
+                                      value: year,
+                                      child: Text(year),
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),
