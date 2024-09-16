@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>870916232993-3vnledjvkg5fps2suh2hteh9uefr07ie.apps.googleusercontent.com</string>
+	<string>870916232993-lkdjhbtn8lb53rpgak8ltdrq87lp1vgr.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.870916232993-3vnledjvkg5fps2suh2hteh9uefr07ie</string>
+	<string>com.googleusercontent.apps.870916232993-lkdjhbtn8lb53rpgak8ltdrq87lp1vgr</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>870916232993-c5ivjnhvg251btov2nt9qupb2l8jun4k.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyD9Zf-gg3muMBUdO35IAm5TQQzvamUMbaQ</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.tong</string>
+	<string>com.meheraj.tong</string>
 	<key>PROJECT_ID</key>
 	<string>tong-project-135c8</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:870916232993:ios:017a26b5376de4d2b55060</string>
+	<string>1:870916232993:ios:bb34c5c9fb7a512ab55060</string>
 </dict>
 </plist>

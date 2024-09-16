@@ -1,4 +1,4 @@
-package com.example.tong
+package com.meheraj.tong
 
 import io.flutter.embedding.android.FlutterActivity
 

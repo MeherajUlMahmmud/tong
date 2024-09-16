@@ -48,6 +48,50 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870916232993:android:e35d26b222976019b55060",
+        "android_client_info": {
+          "package_name": "com.meheraj.tong"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "870916232993-plr9056llld9411vgd9fkb0qo3hl4uv8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meheraj.tong",
+            "certificate_hash": "90c046d480df50ad3949b4559ec650835efcd8b0"
+          }
+        },
+        {
+          "client_id": "870916232993-bu8ofgj2b6thqlt8ov4v1vg22o3uc3fo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlEdnPItfVRIYqFUjBMkLFOhR7gqmEVio"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "870916232993-bu8ofgj2b6thqlt8ov4v1vg22o3uc3fo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "870916232993-3vnledjvkg5fps2suh2hteh9uefr07ie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tong"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
