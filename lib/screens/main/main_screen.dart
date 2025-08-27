@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:tong/screens/main/analytics/analytics_screen.dart';
 import 'package:tong/screens/main/history/HistoryScreen.dart';
 import 'package:tong/screens/main/home_screen.dart';
 import 'package:tong/screens/main/user/profile_screen.dart';
 import 'package:tong/utils/constants.dart';
+import 'package:tong/widgets/offline_indicator.dart';
 
 class MainScreen extends StatefulWidget {
   static const String routeName = '/main';
@@ -19,6 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   // List of screens to navigate between.
   final List<Widget> _screens = [
     const HomeScreen(),
+    const AnalyticsScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
   ];
@@ -26,29 +29,60 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: NavigationLabels.home,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            label: NavigationLabels.history,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: NavigationLabels.profile,
+      body: Column(
+        children: [
+          const OfflineIndicator(),
+          Expanded(
+            child: _screens[_selectedIndex],
           ),
         ],
-        currentIndex: _selectedIndex,
-        onTap: (int index) {
-          setState(() {
-            _selectedIndex = index; // Update the selected index.
-          });
-        },
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          selectedItemColor: Theme.of(context).primaryColor,
+          unselectedItemColor: Colors.grey[600],
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              activeIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined),
+              activeIcon: Icon(Icons.analytics),
+              label: 'Analytics',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history_rounded),
+              activeIcon: Icon(Icons.history_rounded),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+          onTap: (int index) {
+            setState(() {
+              _selectedIndex = index; // Update the selected index.
+            });
+          },
+        ),
       ),
     );
   }
